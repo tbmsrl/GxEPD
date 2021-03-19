@@ -38,13 +38,7 @@
 class GxGDEH0213B73 : public GxEPD
 {
   public:
-#if defined(ESP8266)
-    //GxGDEH0213B73(GxIO& io, int8_t rst = D4, int8_t busy = D2);
-    // use pin numbers, other ESP8266 than Wemos may not use Dx names
-    GxGDEH0213B73(GxIO& io, int8_t rst = 2, int8_t busy = 4);
-#else
-    GxGDEH0213B73(GxIO& io, int8_t rst = 9, int8_t busy = 7);
-#endif
+    GxGDEH0213B73(GxIO& io, int8_t rst = 9, int8_t busy = 7, uint8_t *buffer= NULL);
     void drawPixel(int16_t x, int16_t y, uint16_t color);
     void init(uint32_t serial_diag_bitrate = 0); // = 0 : disabled
     void fillScreen(uint16_t color); // 0x0 black, >0x0 white, to buffer
@@ -72,6 +66,8 @@ class GxGDEH0213B73 : public GxEPD
     void drawPagedToWindow(void (*drawCallback)(const void*), uint16_t x, uint16_t y, uint16_t w, uint16_t h, const void*);
     void drawPagedToWindow(void (*drawCallback)(const void*, const void*), uint16_t x, uint16_t y, uint16_t w, uint16_t h, const void*, const void*);
     void drawCornerTest(uint8_t em = 0x01);
+
+
   private:
     template <typename T> static inline void
     swap(T& a, T& b)
@@ -98,11 +94,7 @@ class GxGDEH0213B73 : public GxEPD
     void _Update_Part(void);
     void _rotate(uint16_t& x, uint16_t& y, uint16_t& w, uint16_t& h);
   protected:
-#if defined(__AVR)
-    uint8_t _buffer[GxGDEH0213B73_PAGE_SIZE];
-#else
-    uint8_t _buffer[GxGDEH0213B73_BUFFER_SIZE];
-#endif
+    uint8_t *_buffer;
   private:
     GxIO& IO;
     int16_t _current_page;

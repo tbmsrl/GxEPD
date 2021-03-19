@@ -22,7 +22,7 @@
 #endif
 
 // Partial Update Delay, may have an influence on degradation
-#define GxGDEH0213B73_PU_DELAY 300
+#define GxGDEH0213B73_PU_DELAY 0
 
 const uint8_t GxGDEH0213B73::LUT_DATA_full[] =
 {
@@ -68,10 +68,10 @@ const uint8_t GxGDEH0213B73::LUT_DATA_part[] =
   //0x15, 0x41, 0xA8, 0x32, 0x50, 0x2C, 0x0B,
 };
 
-GxGDEH0213B73::GxGDEH0213B73(GxIO& io, int8_t rst, int8_t busy) :
+GxGDEH0213B73::GxGDEH0213B73(GxIO& io, int8_t rst, int8_t busy, uint8_t *buffer) :
   GxEPD(GxGDEH0213B73_VISIBLE_WIDTH, GxGDEH0213B73_HEIGHT), IO(io),
   _current_page(-1), _using_partial_mode(false), _diag_enabled(false),
-  _rst(rst), _busy(busy)
+  _rst(rst), _busy(busy), _buffer(buffer)
 {
 }
 
@@ -98,7 +98,7 @@ void GxGDEH0213B73::drawPixel(int16_t x, int16_t y, uint16_t color)
   uint16_t i = x / 8 + y * GxGDEH0213B73_WIDTH / 8;
   if (_current_page < 1)
   {
-    if (i >= sizeof(_buffer)) return;
+    if (i >= GxGDEH0213B73_BUFFER_SIZE) return;
   }
   else
   {
@@ -128,7 +128,6 @@ void GxGDEH0213B73::init(uint32_t serial_diag_bitrate)
     pinMode(_rst, OUTPUT);
   }
   pinMode(_busy, INPUT);
-  fillScreen(GxEPD_WHITE);
   _current_page = -1;
   _using_partial_mode = false;
 }
@@ -136,7 +135,7 @@ void GxGDEH0213B73::init(uint32_t serial_diag_bitrate)
 void GxGDEH0213B73::fillScreen(uint16_t color)
 {
   uint8_t data = (color == GxEPD_BLACK) ? 0xFF : 0x00;
-  for (uint16_t x = 0; x < sizeof(_buffer); x++)
+  for (uint16_t x = 0; x < GxGDEH0213B73_BUFFER_SIZE; x++)
   {
     _buffer[x] = data;
   }
@@ -153,7 +152,7 @@ void GxGDEH0213B73::update(void)
     for (uint16_t x = 0; x < GxGDEH0213B73_WIDTH / 8; x++)
     {
       uint16_t idx = y * (GxGDEH0213B73_WIDTH / 8) + x;
-      uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+      uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
       _writeData(~data);
     }
   }
@@ -163,7 +162,7 @@ void GxGDEH0213B73::update(void)
     for (uint16_t x = 0; x < GxGDEH0213B73_WIDTH / 8; x++)
     {
       uint16_t idx = y * (GxGDEH0213B73_WIDTH / 8) + x;
-      uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+      uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
       _writeData(~data);
     }
   }
@@ -305,7 +304,7 @@ void GxGDEH0213B73::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
     for (int16_t x1 = xs_d8; x1 <= xe_d8; x1++)
     {
       uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-      uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+      uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
       _writeData(~data);
     }
   }
@@ -321,7 +320,7 @@ void GxGDEH0213B73::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
     for (int16_t x1 = xs_d8; x1 <= xe_d8; x1++)
     {
       uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-      uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+      uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
       _writeData(~data);
     }
   }
@@ -355,7 +354,7 @@ void GxGDEH0213B73::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, ui
     for (int16_t x1 = xs / 8; x1 <= xse_d8; x1++)
     {
       uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-      uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+      uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
       _writeData(~data);
     }
   }
@@ -625,7 +624,7 @@ void GxGDEH0213B73::drawPaged(void (*drawCallback)(void))
         for (int16_t x1 = 0; x1 < GxGDEH0213B73_WIDTH / 8; x1++)
         {
           uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-          uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+          uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
           _writeData(~data);
         }
       }
@@ -654,7 +653,7 @@ void GxGDEH0213B73::drawPaged(void (*drawCallback)(uint32_t), uint32_t p)
         for (int16_t x1 = 0; x1 < GxGDEH0213B73_WIDTH / 8; x1++)
         {
           uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-          uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+          uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
           _writeData(~data);
         }
       }
@@ -683,7 +682,7 @@ void GxGDEH0213B73::drawPaged(void (*drawCallback)(const void*), const void* p)
         for (int16_t x1 = 0; x1 < GxGDEH0213B73_WIDTH / 8; x1++)
         {
           uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-          uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+          uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
           _writeData(~data);
         }
       }
@@ -712,7 +711,7 @@ void GxGDEH0213B73::drawPaged(void (*drawCallback)(const void*, const void*), co
         for (int16_t x1 = 0; x1 < GxGDEH0213B73_WIDTH / 8; x1++)
         {
           uint16_t idx = y1 * (GxGDEH0213B73_WIDTH / 8) + x1;
-          uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+          uint8_t data = (idx < GxGDEH0213B73_BUFFER_SIZE) ? _buffer[idx] : 0x00;
           _writeData(~data);
         }
       }
