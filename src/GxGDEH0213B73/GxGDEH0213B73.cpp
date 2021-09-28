@@ -431,28 +431,34 @@ void GxGDEH0213B73::_writeData(const uint8_t* data, uint16_t n)
 void GxGDEH0213B73::_waitWhileBusy(const char* comment)
 {
   unsigned long start = micros();
-  while (1)
-  {
-    if (!digitalRead(_busy)) break;
-    delay(1);
-    if (micros() - start > 1000000)
-    {
-      if (_diag_enabled) Serial.println("Busy Timeout!");
-      break;
-    }
+  static bool enabled= true;
+
+  if(enabled){
+    while (1)
+      {
+        if (!digitalRead(_busy)) break;
+        delay(1);
+        if (micros() - start > 5000000)
+        {
+          enabled= false; // Toma como que la pantalla se encuentra desconectada
+          if (_diag_enabled) Serial.println("Busy Timeout!");
+          break;
+        }
+      }
+      if (comment)
+      {
+    #if !defined(DISABLE_DIAGNOSTIC_OUTPUT)
+        if (_diag_enabled)
+        {
+          unsigned long elapsed = micros() - start;
+          Serial.print(comment);
+          Serial.print(" : ");
+          Serial.println(elapsed);
+        }
+    #endif
+      }
   }
-  if (comment)
-  {
-#if !defined(DISABLE_DIAGNOSTIC_OUTPUT)
-    if (_diag_enabled)
-    {
-      unsigned long elapsed = micros() - start;
-      Serial.print(comment);
-      Serial.print(" : ");
-      Serial.println(elapsed);
-    }
-#endif
-  }
+  
   (void) start;
 }
 
