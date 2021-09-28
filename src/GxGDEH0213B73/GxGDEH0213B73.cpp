@@ -435,7 +435,7 @@ void GxGDEH0213B73::_waitWhileBusy(const char* comment)
   {
     if (!digitalRead(_busy)) break;
     delay(1);
-    if (micros() - start > 10000000)
+    if (micros() - start > 1000000)
     {
       if (_diag_enabled) Serial.println("Busy Timeout!");
       break;
