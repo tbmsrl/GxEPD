@@ -431,7 +431,7 @@ void GxGDEH0213B73::_writeData(const uint8_t* data, uint16_t n)
 void GxGDEH0213B73::_waitWhileBusy(const char* comment)
 {
   unsigned long start = micros();
-  static bool enabled= true;
+  static bool enabled= true; // Detecta si el display se encuentra conectado o no
 
   if(enabled){
     while (1)
